@@ -1,0 +1,53 @@
+
+/* FULL reset: kill all horizontal margins and padding everywhere */
+
+body, html {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw !important;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Override Bootstrap container behavior */
+.container, .container-fluid, main.container, body > main {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100vw !important;
+  width: 100vw !important;
+}
+
+/* Force main.content to span full screen width */
+main.content {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+}
+
+/* Eliminate all padding/margin in tabsets and columns */
+.panel-tabset,
+.column,
+.columns,
+.cell {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+/* Force code blocks and outputs full width, no left margin */
+div.sourceCode,
+pre.sourceCode,
+.cell-output,
+.cell-output-display,
+.cell-output-stdout {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Reset box sizing across elements */
+*, *::before, *::after {
+  box-sizing: border-box;
+}

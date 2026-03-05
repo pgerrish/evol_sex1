@@ -1,0 +1,45 @@
+/* Make the whole page use full viewport width, no padding */
+body, html {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw !important;
+  overflow-x: hidden;
+}
+
+/* Remove Bootstrap container max-width and padding */
+.container, main.container {
+  max-width: none !important;
+  width: 150% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin: 0 !important;
+}
+
+/* Remove padding/margin on main content */
+main.content {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  max-width: none !important;
+  width: 150% !important;
+}
+
+/* Remove gutters from panels and tabsets */
+.panel-tabset {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 150% !important;
+  max-width: none !important;
+}
+
+/* Remove gutters and margin from code blocks and outputs */
+div.sourceCode, pre.sourceCode, .cell-output, .cell-output-display {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+  width: 150% !important;
+  overflow-x: auto;
+}

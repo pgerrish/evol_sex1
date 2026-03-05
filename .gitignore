@@ -18,3 +18,6 @@ Thumbs.db
 
 # Conflicted copies
 *conflicted copy*
+
+/.quarto/
+**/*.quarto_ipynb

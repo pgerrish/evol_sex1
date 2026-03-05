@@ -1,5 +1,17 @@
 project:
-  title: "thebe1"
+  type: website
+  title: "evol_sex1"
 
+website:
+  navbar:
+    left:
+      - text: "Home"
+        href: index.qmd
+      - text: "Interactive Sex Recombination"
+        href: interactive-sex-recombination.qmd
 
-
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
