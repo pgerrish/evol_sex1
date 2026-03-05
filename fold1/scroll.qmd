@@ -1,0 +1,55 @@
+---
+title: "Pyodide + Scrollable Foldable Code"
+format:
+  html:
+    code-tools: true
+    code-fold: true
+    code-summary: "Show code"
+    css: scroll.css
+filters:
+  - pyodide
+engine: pyodide
+---
+
+## Scrollable, Foldable Code Example
+
+
+```{pyodide-python}
+#| class: scroll-box
+
+import numpy as np
+
+
+# **********************************************************
+# ***    SIMULATION PARAMETERS                           ***
+# **********************************************************
+n_pops = 100           # Number of populations in the ensemble
+m = 20                 # Number of distinct genotypes (individuals) per population
+ngens = 5000           # Number of generations to simulate
+ti = 2                 # Time increments per generation (for smoother dynamics)
+rho = 0.5              # Initial correlation between X and Y loci
+mu_X, mu_Y = -0.1, -0.1  # Mean values for loci X and Y
+sigma_X, sigma_Y = 0.05, 0.05  # Standard deviations for loci X and Y
+cov_XY = rho * sigma_X * sigma_Y  # Covariance between X and Y
+cov_matrix = np.array([[sigma_X**2, cov_XY], [cov_XY, sigma_Y**2]])  # Covariance matrix for bivariate distributions
+tf = 200               # Final time (in generations) for ensemble plots
+tr = tf*ti             # Final time (in time increments) for ensemble plots
+
+def sample_bivariate(dist, size):
+    if dist == "multivariate_normal":
+        return np.random.multivariate_normal([mu_X, mu_Y], cov_matrix, size=size)
+    elif dist == "bivariate_t":
+        df = 5
+        g = np.random.gamma(df / 2., 2. / df, size=(size,))
+        Z = np.random.multivariate_normal([0, 0], cov_matrix, size=size)
+        return np.array([mu_X, mu_Y]) + Z / np.sqrt(g)[:, None]
+    elif dist == "bivariate_uniform":
+        low  = [mu_X - sigma_X * np.sqrt(3), mu_Y - sigma_Y * np.sqrt(3)]
+        high = [mu_X + sigma_X * np.sqrt(3), mu_Y + sigma_Y * np.sqrt(3)]
+        return np.random.uniform(low, high, size=(size,))
+    else:
+        raise ValueError("Unknown distribution type")
+
+np.random.seed(42)  # For reproducibility
+
+```

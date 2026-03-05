@@ -1,0 +1,48 @@
+---
+title: "Popup Plot Example"
+format:
+  html:
+    css: styles.css
+filters:
+  - pyodide
+execute:
+  enabled: false
+  echo: true
+  code-fold: true
+  code-summary: "Show code"
+---
+
+## Click to open plot in a floating window
+
+```{python}
+#| echo: true
+#| code-fold: false
+
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+from js import window
+
+# Create the plot
+fig, ax = plt.subplots(figsize=(6, 4))  # size in inches
+ax.plot([0, 1, 2], [0, 1, 0])
+ax.set_title("Popup Plot")
+
+# Save to buffer
+buf = BytesIO()
+fig.savefig(buf, format="png", bbox_inches='tight')
+buf.seek(0)
+b64_image = base64.b64encode(buf.read()).decode("utf-8")
+buf.close()
+
+# Estimate pixel dimensions (DPI * size in inches)
+dpi = fig.dpi
+width_px = int(fig.get_size_inches()[0] * dpi)
+height_px = int(fig.get_size_inches()[1] * dpi)
+
+# Inject into popup
+html = f"<html><head><title>Popup Plot</title></head><body style='margin:0'><img src='data:image/png;base64,{b64_image}' style='display:block'></body></html>"
+popup = window.open("", "_blank", f"width={width_px},height={height_px}")
+popup.document.write(html)
+popup.document.close()
+```

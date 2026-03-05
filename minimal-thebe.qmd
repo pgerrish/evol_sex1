@@ -1,0 +1,22 @@
+---
+title: "Minimal Thebe Test"
+format:
+  html:
+    code-tools: true
+jupyter: python3
+execute:
+  echo: true
+  eval: true
+thebe: true
+include-in-header: thebe-header.html
+filters:
+  - pyodide
+---
+
+## Minimal Thebe Test
+
+This is a minimal test to check Thebe interactivity.
+
+```{pyodide-python}
+print("Hello from Thebe!")
+``` 

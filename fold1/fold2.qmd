@@ -1,0 +1,517 @@
+---
+title: "Scrollable Foldable Code"
+engine: jupyter
+format:
+  html:
+    code-fold: true
+    code-tools: true
+    code-summary: "Show code"
+    theme: flatly.scss
+filters:
+  - pyodide
+---
+
+## Simulation Demo
+
+
+
+<details>
+<summary><strong>Parameters (click to expand)</strong></summary>
+<div>  
+
+
+```{pyodide-python}
+
+import numpy as np
+
+
+# **********************************************************
+# ***    SIMULATION PARAMETERS                           ***
+# **********************************************************
+n_pops = 100           # Number of populations in the ensemble
+m = 20                 # Number of distinct genotypes (individuals) per population
+ngens = 5000           # Number of generations to simulate
+ti = 2                 # Time increments per generation (for smoother dynamics)
+rho = 0.5              # Initial correlation between X and Y loci
+mu_X, mu_Y = -0.1, -0.1  # Mean values for loci X and Y
+sigma_X, sigma_Y = 0.05, 0.05  # Standard deviations for loci X and Y
+cov_XY = rho * sigma_X * sigma_Y  # Covariance between X and Y
+cov_matrix = np.array([[sigma_X**2, cov_XY], [cov_XY, sigma_Y**2]])  # Covariance matrix for bivariate distributions
+tf = 200               # Final time (in generations) for ensemble plots
+tr = tf*ti             # Final time (in time increments) for ensemble plots
+
+def sample_bivariate(dist, size):
+    if dist == "multivariate_normal":
+        return np.random.multivariate_normal([mu_X, mu_Y], cov_matrix, size=size)
+    elif dist == "bivariate_t":
+        df = 5
+        g = np.random.gamma(df / 2., 2. / df, size=(size,))
+        Z = np.random.multivariate_normal([0, 0], cov_matrix, size=size)
+        return np.array([mu_X, mu_Y]) + Z / np.sqrt(g)[:, None]
+    elif dist == "bivariate_uniform":
+        low  = [mu_X - sigma_X * np.sqrt(3), mu_Y - sigma_Y * np.sqrt(3)]
+        high = [mu_X + sigma_X * np.sqrt(3), mu_Y + sigma_Y * np.sqrt(3)]
+        return np.random.uniform(low, high, size=(size,))
+    else:
+        raise ValueError("Unknown distribution type")
+
+np.random.seed(42)  # For reproducibility
+
+
+```
+
+
+
+</div>
+</details> 
+<details>
+ <summary><strong>Computation (click to expand)</strong></summary>
+
+```{pyodide-python}
+
+# Add noise
+noise = 0.1 * np.random.randn(gens)
+y_noisy = y + noise
+
+```
+
+</details> 
+<details> <summary><strong>Plotting</strong></summary>
+
+```{pyodide-python}
+
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(8, 4))
+plt.plot(x, y_noisy, label="Noisy sin(x)", color="blue")
+plt.plot(x, y, label="True sin(x)", color="red", linestyle="--")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.title("Sine Wave with Noise")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+```
+
+</details>
+
+::: {.raw-html}
+<script>
+// Function to setup scroll handlers
+function setupScrollHandlers() {
+  console.log("Setting up scroll handlers after Pyodide load");
+  
+  // Find all code blocks and their containers
+  const codeBlocks = document.querySelectorAll('div.sourceCode');
+  const detailDivs = document.querySelectorAll('details > div');
+  
+  console.log("Found code blocks:", codeBlocks.length);
+  console.log("Found detail divs:", detailDivs.length);
+  
+  // Handle code blocks
+  codeBlocks.forEach(function(block, index) {
+    console.log("Setting up block", index, block);
+    
+    // Add mouse wheel event listener to the div
+    block.addEventListener('wheel', function(e) {
+      console.log("Wheel event on div block", index, "deltaY:", e.deltaY);
+      e.preventDefault();
+      e.stopPropagation();
+      this.scrollTop += e.deltaY;
+      return false;
+    }, { passive: false, capture: true });
+    
+    // Also handle the pre element inside
+    const preElement = block.querySelector('pre.sourceCode');
+    if (preElement) {
+      console.log("Found pre element in block", index);
+      preElement.addEventListener('wheel', function(e) {
+        console.log("Wheel event on pre element", index, "deltaY:", e.deltaY);
+        e.preventDefault();
+        e.stopPropagation();
+        this.scrollTop += e.deltaY;
+        return false;
+      }, { passive: false, capture: true });
+    }
+    
+    // Also handle the code element inside
+    const codeElement = block.querySelector('code.sourceCode');
+    if (codeElement) {
+      console.log("Found code element in block", index);
+      codeElement.addEventListener('wheel', function(e) {
+        console.log("Wheel event on code element", index, "deltaY:", e.deltaY);
+        e.preventDefault();
+        e.stopPropagation();
+        this.scrollTop += e.deltaY;
+        return false;
+      }, { passive: false, capture: true });
+    }
+    
+    // Handle horizontal scrolling with shift+wheel
+    block.addEventListener('wheel', function(e) {
+      if (e.shiftKey) {
+        console.log("Shift+wheel event on block", index, "deltaY:", e.deltaY);
+        e.preventDefault();
+        e.stopPropagation();
+        this.scrollLeft += e.deltaY;
+        return false;
+      }
+    }, { passive: false, capture: true });
+    
+    // Add event listener to the entire block area
+    block.addEventListener('mouseenter', function() {
+      console.log("Mouse entered block", index);
+    });
+    
+    block.addEventListener('mouseleave', function() {
+      console.log("Mouse left block", index);
+    });
+    
+    // Touch events for mobile
+    let isScrolling = false;
+    let startY = 0;
+    let startX = 0;
+    let startScrollTop = 0;
+    let startScrollLeft = 0;
+    
+    block.addEventListener('touchstart', function(e) {
+      isScrolling = true;
+      startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      startScrollTop = this.scrollTop;
+      startScrollLeft = this.scrollLeft;
+    });
+    
+    block.addEventListener('touchmove', function(e) {
+      if (!isScrolling) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const deltaY = startY - e.touches[0].clientY;
+      const deltaX = startX - e.touches[0].clientX;
+      this.scrollTop = startScrollTop + deltaY;
+      this.scrollLeft = startScrollLeft + deltaX;
+    });
+    
+    block.addEventListener('touchend', function() {
+      isScrolling = false;
+    });
+  });
+  
+  // Handle detail divs to prevent outer scrolling
+  detailDivs.forEach(function(div) {
+    div.addEventListener('wheel', function(e) {
+      e.stopPropagation();
+    }, { passive: false });
+  });
+  
+             // Global wheel handler as fallback
+           document.addEventListener('wheel', function(e) {
+             const target = e.target;
+             console.log("Global wheel event, target:", target, "deltaY:", e.deltaY);
+             console.log("Target classes:", target.className);
+             console.log("Target tag:", target.tagName);
+    
+    // Monaco Editor specific targeting
+    if (target.closest('.monaco-editor')) {
+      console.log("Global wheel event on Monaco Editor");
+      const monacoEditor = target.closest('.monaco-editor');
+      const scrollableElement = monacoEditor.querySelector('.monaco-scrollable-element');
+      if (scrollableElement) {
+        e.preventDefault();
+        e.stopPropagation();
+        scrollableElement.scrollTop += e.deltaY;
+        console.log("Applied scroll to Monaco scrollable element, new scrollTop:", scrollableElement.scrollTop);
+        return false;
+      }
+    }
+
+    // Target Monaco Editor's internal scrollable containers
+    if (target.closest('.lines-content') || target.closest('.view-lines')) {
+      console.log("Global wheel event on Monaco lines content");
+      const monacoContainer = target.closest('.monaco-editor');
+      if (monacoContainer) {
+        const scrollableElement = monacoContainer.querySelector('.monaco-scrollable-element') || 
+                                monacoContainer.querySelector('.overflow-guard') ||
+                                monacoContainer.querySelector('[data-uri]');
+        if (scrollableElement) {
+          e.preventDefault();
+          e.stopPropagation();
+          scrollableElement.scrollTop += e.deltaY;
+          console.log("Applied scroll to Monaco container, new scrollTop:", scrollableElement.scrollTop);
+          return false;
+        }
+      }
+    }
+    
+    // Check for sourceCode elements
+    if (target.closest('.sourceCode')) {
+      console.log("Global wheel event on sourceCode element");
+      const sourceCode = target.closest('.sourceCode');
+      if (sourceCode) {
+        e.preventDefault();
+        e.stopPropagation();
+        sourceCode.scrollTop += e.deltaY;
+        console.log("Applied scroll to sourceCode, new scrollTop:", sourceCode.scrollTop);
+        return false;
+      }
+    }
+    
+    // Check for Pyodide elements
+    if (target.closest('.pyodide-cell') || target.closest('.qpyodide-cell')) {
+      console.log("Global wheel event on Pyodide element");
+      const pyodideCell = target.closest('.pyodide-cell') || target.closest('.qpyodide-cell');
+      if (pyodideCell) {
+        e.preventDefault();
+        e.stopPropagation();
+        pyodideCell.scrollTop += e.deltaY;
+        console.log("Applied scroll to pyodide cell, new scrollTop:", pyodideCell.scrollTop);
+        return false;
+      }
+    }
+    
+    // Look for any element with scrollable content
+    let scrollableElement = target.closest('[style*="overflow"], [style*="scroll"]');
+    if (!scrollableElement) {
+      // Try to find Monaco Editor's scrollable element from the target
+      const monacoParent = target.closest('.monaco-editor, .jp-CodeCell, .pyodide-cell');
+      if (monacoParent) {
+        scrollableElement = monacoParent.querySelector('.monaco-scrollable-element, .overflow-guard, [data-uri]');
+      }
+    }
+    
+    if (scrollableElement) {
+      console.log("Global wheel event on scrollable element:", scrollableElement);
+      e.preventDefault();
+      e.stopPropagation();
+      scrollableElement.scrollTop += e.deltaY;
+      console.log("Applied scroll to scrollable element, new scrollTop:", scrollableElement.scrollTop);
+      return false;
+    }
+    
+    // If we get here, log that no scrollable element was found
+    console.log("No scrollable element found for wheel event");
+  }, { passive: false, capture: true });
+}
+
+// Wait for DOM to load, then wait for Pyodide to finish
+         document.addEventListener("DOMContentLoaded", function () {
+           console.log("Main document script loaded");
+           
+           // Test if wheel events are being captured at all
+           document.addEventListener('wheel', function(e) {
+             console.log("Document wheel event captured, deltaY:", e.deltaY);
+           }, { passive: false, capture: true });
+           
+           // Test wheel events on the body
+           document.body.addEventListener('wheel', function(e) {
+             console.log("Body wheel event captured, deltaY:", e.deltaY, "target:", e.target);
+           }, { passive: false, capture: true });
+           
+           // Add an even earlier wheel event listener to catch events before Monaco Editor
+           console.log("Setting up window wheel event listener");
+           window.addEventListener('wheel', function(e) {
+             console.log("Window wheel event captured, deltaY:", e.deltaY, "target:", e.target);
+             
+             // Get mouse position to determine which code block we're over
+             const mouseX = e.clientX;
+             const mouseY = e.clientY;
+             
+             console.log("Mouse position:", mouseX, mouseY);
+             
+             // Find all code blocks and check if mouse is over any of them
+             const codeBlocks = document.querySelectorAll('.sourceCode, .monaco-editor, .pyodide-cell, .jp-CodeCell');
+             let foundCodeBlock = null;
+             
+             console.log("Checking", codeBlocks.length, "code blocks for mouse position");
+             
+             codeBlocks.forEach(function(block, index) {
+               const rect = block.getBoundingClientRect();
+               console.log("Block", index, "rect:", rect.left, rect.top, rect.right, rect.bottom);
+               
+               if (mouseX >= rect.left && mouseX <= rect.right && 
+                   mouseY >= rect.top && mouseY <= rect.bottom) {
+                 foundCodeBlock = block;
+                 console.log("Mouse is over code block:", block, "class:", block.className);
+               }
+             });
+             
+             if (foundCodeBlock) {
+               console.log("Window wheel event over code block, preventing default");
+               e.preventDefault();
+               e.stopPropagation();
+               
+               // Try to find the actual scrollable element within the code block
+               let scrollableElement = foundCodeBlock;
+               
+               // For Monaco Editor, look for its internal scrollable elements
+               if (foundCodeBlock.classList.contains('monaco-editor')) {
+                 const monacoScrollable = foundCodeBlock.querySelector('.monaco-scrollable-element') ||
+                                        foundCodeBlock.querySelector('.overflow-guard') ||
+                                        foundCodeBlock.querySelector('[data-uri]');
+                 if (monacoScrollable) {
+                   scrollableElement = monacoScrollable;
+                   console.log("Found Monaco scrollable element:", monacoScrollable);
+                 }
+               }
+               
+               // Apply the scroll
+               const oldScrollTop = scrollableElement.scrollTop;
+               scrollableElement.scrollTop += e.deltaY;
+               console.log("Applied scroll via window handler, old scrollTop:", oldScrollTop, "new scrollTop:", scrollableElement.scrollTop);
+               return false;
+             } else {
+               console.log("Mouse not over any code block");
+             }
+           }, { passive: false, capture: true });
+           
+           // Also try a document-level listener as a backup
+           console.log("Setting up document wheel event listener");
+           document.addEventListener('wheel', function(e) {
+             console.log("Document wheel event captured, deltaY:", e.deltaY, "target:", e.target);
+             
+             // Get mouse position to determine which code block we're over
+             const mouseX = e.clientX;
+             const mouseY = e.clientY;
+             
+             console.log("Document - Mouse position:", mouseX, mouseY);
+             
+             // Find all code blocks and check if mouse is over any of them
+             const codeBlocks = document.querySelectorAll('.sourceCode, .monaco-editor, .pyodide-cell, .jp-CodeCell');
+             let foundCodeBlock = null;
+             
+             console.log("Document - Checking", codeBlocks.length, "code blocks for mouse position");
+             
+             codeBlocks.forEach(function(block, index) {
+               const rect = block.getBoundingClientRect();
+               console.log("Document - Block", index, "rect:", rect.left, rect.top, rect.right, rect.bottom);
+               
+               if (mouseX >= rect.left && mouseX <= rect.right && 
+                   mouseY >= rect.top && mouseY <= rect.bottom) {
+                 foundCodeBlock = block;
+                 console.log("Document - Mouse is over code block:", block, "class:", block.className);
+               }
+             });
+             
+             if (foundCodeBlock) {
+               console.log("Document wheel event over code block, preventing default");
+               e.preventDefault();
+               e.stopPropagation();
+               
+               // Try to find the actual scrollable element within the code block
+               let scrollableElement = foundCodeBlock;
+               
+               // For Monaco Editor, look for its internal scrollable elements
+               if (foundCodeBlock.classList.contains('monaco-editor')) {
+                 const monacoScrollable = foundCodeBlock.querySelector('.monaco-scrollable-element') ||
+                                        foundCodeBlock.querySelector('.overflow-guard') ||
+                                        foundCodeBlock.querySelector('[data-uri]');
+                 if (monacoScrollable) {
+                   scrollableElement = monacoScrollable;
+                   console.log("Document - Found Monaco scrollable element:", monacoScrollable);
+                 }
+               }
+               
+               // Apply the scroll
+               const oldScrollTop = scrollableElement.scrollTop;
+               scrollableElement.scrollTop += e.deltaY;
+               console.log("Document - Applied scroll, old scrollTop:", oldScrollTop, "new scrollTop:", scrollableElement.scrollTop);
+               return false;
+             } else {
+               console.log("Document - Mouse not over any code block");
+             }
+           }, { passive: false, capture: true });
+           
+           // Try to override Monaco Editor's wheel event handling
+           setTimeout(function() {
+             console.log("Attempting to override Monaco Editor wheel events");
+             const monacoEditors = document.querySelectorAll('.monaco-editor');
+             console.log("Found Monaco Editors:", monacoEditors.length);
+             
+             monacoEditors.forEach(function(editor, index) {
+               console.log("Found Monaco Editor", index, editor);
+               
+               // Try to disable Monaco Editor's wheel event handling
+               if (editor.style) {
+                 editor.style.pointerEvents = 'auto';
+               }
+               
+               // Add our own wheel event listener directly to the Monaco Editor
+               editor.addEventListener('wheel', function(e) {
+                 console.log("Monaco Editor wheel event captured, deltaY:", e.deltaY);
+                 e.preventDefault();
+                 e.stopPropagation();
+                 
+                 const scrollableElement = editor.querySelector('.monaco-scrollable-element') || 
+                                         editor.querySelector('.overflow-guard') ||
+                                         editor.querySelector('[data-uri]');
+                 if (scrollableElement) {
+                   scrollableElement.scrollTop += e.deltaY;
+                   console.log("Applied scroll to Monaco scrollable element, new scrollTop:", scrollableElement.scrollTop);
+                 } else {
+                   // Fallback: try to scroll the editor itself
+                   editor.scrollTop += e.deltaY;
+                   console.log("Applied scroll to Monaco editor itself, new scrollTop:", editor.scrollTop);
+                 }
+                 return false;
+               }, { passive: false, capture: true });
+             });
+           }, 5000); // Wait 5 seconds for Monaco Editor to fully initialize
+  
+  // Check if Pyodide is already loaded
+  if (window.pyodide) {
+    console.log("Pyodide already loaded, setting up handlers immediately");
+    setupScrollHandlers();
+  } else {
+    // Wait for Pyodide to finish loading
+    console.log("Waiting for Pyodide to load...");
+    
+    // Check every 100ms for Pyodide completion
+    const checkPyodide = setInterval(function() {
+      if (window.pyodide) {
+        console.log("Pyodide detected, setting up handlers");
+        clearInterval(checkPyodide);
+        setupScrollHandlers();
+      }
+    }, 100);
+    
+    // Also listen for the completion message
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'pyodide-loaded') {
+        console.log("Pyodide loaded message received, setting up handlers");
+        clearInterval(checkPyodide);
+        setupScrollHandlers();
+      }
+    });
+    
+    // Fallback: setup handlers after 3 seconds regardless
+    setTimeout(function() {
+      console.log("Fallback: setting up handlers after timeout");
+      clearInterval(checkPyodide);
+      setupScrollHandlers();
+      
+      // Also try to setup handlers on any new elements that might be created
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach(function(node) {
+              if (node.nodeType === 1 && (node.classList.contains('sourceCode') || node.querySelector('.sourceCode'))) {
+                console.log("New sourceCode element detected, setting up handlers");
+                setupScrollHandlers();
+              }
+            });
+          }
+        });
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }, 3000);
+  }
+});
+</script>
+:::
+

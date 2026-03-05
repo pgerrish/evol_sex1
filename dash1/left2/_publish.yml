@@ -1,0 +1,4 @@
+- source: dashboard.qmd
+  quarto-pub:
+    - id: 15464950-89db-4d3d-aa57-b2bbea8f23e4
+      url: https://pgerrish.quarto.pub/left-aligned-dashboard-433a

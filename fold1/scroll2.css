@@ -1,0 +1,13 @@
+/* Target Quarto's code cell output (visible block) */
+.cell-output .sourceCode,
+.cell .sourceCode,
+div.sourceCode {
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: auto;
+  display: block;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 1em;
+  border-radius: 6px;
+}

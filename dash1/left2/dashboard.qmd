@@ -1,0 +1,40 @@
+---
+title: "Left-Aligned Dashboard"
+format:
+  html: 
+    grid:
+      sidebar-width: 300px
+      body-width: 1200px
+      margin-width: 300px
+      gutter-width: 1.5rem
+filters:
+  - pyodide
+execute:
+  enabled: false
+  echo: false
+  code-fold: true
+  code-summary: "Show code"
+---
+
+::: {.panel-tabset}
+
+### Parameters
+
+```{pyodide-python}
+#| echo: true
+#| code-fold: false
+#| code-summary: "Simulation Parameters"
+
+param_a = 10
+param_b = 20
+```
+
+### Output
+
+```{pyodide-python}
+#| code-fold: true
+#| code-summary: "Example output"
+print(f"Parameters are a={param_a}, b={param_b}")
+```
+
+:::

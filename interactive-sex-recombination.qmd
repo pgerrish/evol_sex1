@@ -1,0 +1,681 @@
+---
+title: " 🧬 Supplementary Information"
+subtitle: "A 'second law' governs the evolutionary potential of sex"
+authors:
+    - "**Philip J Gerrish**"
+    - "**Benjamin Galeota Sprung**"
+    - "**Richard E Lenski**"
+# engine: knitr
+# format: live-html
+format:
+  html: 
+    grid:
+      sidebar-width: 200px
+      body-width: 1200px
+      margin-width: 400px
+      gutter-width: 1.5rem
+    code-tools: true        # enables code toggling
+    code-fold: true         # makes all blocks foldable
+    code-summary: "Show code"
+    toc: true
+    theme:
+      # - default
+      # - darkly.scss
+      - cosmo
+      # - flatly.scss
+    fontsize: 1.4em
+    linestretch: 1.7
+# format:
+#  html:
+#    code-tools: true        # enables code toggling
+#    code-fold: true         # makes all blocks foldable
+#    code-summary: "Show code"
+#    toc: true
+#    theme:
+#      - default
+#      # - darkly.scss
+#      # - cosmo
+#      - flatly.scss
+#    fontsize: 1.1em
+#    linestretch: 1.7 -->
+# format:
+#   html:
+#     embed-resources: true
+#     theme:
+#       - default
+#       - cosmo.scss
+# format:
+#   html:
+#     theme: cosmo
+#     css: styles.css
+filters:
+  - pyodide
+jupyter: python3
+execute:
+  enabled: true
+  echo: true
+  eval: true
+  thebe: true
+include-in-header: thebe-header.html
+project:
+  type: website
+  output-dir: docs
+  navbar:
+    search: true    
+engine: knitr
+---
+
+
+
+### Interactive Ensemble Dynamics under Selection
+
+This document simulates an ensemble of deterministic populations under selection to explore the evolutionary dynamics of sexual reproduction and recombination. The simulation tracks populations of fictitious organisms with two genes (loci) X and Y, and demonstrates a fundamental result about the selective advantage of sex.
+
+### Biological Context
+
+The simulation models populations where:
+
+- Each individual has two genes (X and Y) that contribute to fitness
+- Fitness is determined by the exponential of the sum of these two genetic values
+- Selection acts on the population, changing allele frequencies over time
+- The "sex potential" is proportional to the negative covariance between X and Y
+- The selective advantage of sex is proportional to the negative cumulative covariance
+
+This framework allows us to explore why sexual reproduction might be evolutionarily advantageous, even though it comes with costs like the "twofold cost of sex."
+
+### Mathematical Foundation
+
+The key insight is that sexual reproduction can break up unfavorable genetic associations (linkage disequilibrium). When two loci are negatively correlated (negative covariance), recombination can create beneficial combinations that selection can then act upon. The cumulative covariance over time provides a measure of the total selective advantage that sex provides.
+
+Try editing the parameters and re-running to explore different scenarios!
+
+## Inputs
+
+This section sets up the simulation parameters and defines the initial genetic distributions. The parameters control the evolutionary dynamics and allow you to explore different scenarios.
+
+### Distribution Type
+- **Distribution Type**: Sets the statistical distribution used to generate the initial genetic values (X and Y) for each individual in the population.
+    - `"multivariate_normal"`: The most common choice; both loci are normally distributed with a specified correlation (rho). This models traits influenced by many small additive effects.
+    - `"bivariate_t"`: Both loci are drawn from a t-distribution, which has heavier tails than the normal. This allows for more extreme initial values and can model populations with rare, large-effect variants.
+    - `"bivariate_uniform"`: Both loci are drawn from a uniform distribution within a specified range. This models a population with maximum genetic diversity and no initial bias toward any value.
+
+Try changing the distribution type to see how different genetic architectures affect the evolutionary dynamics and the selective advantage of sex!
+
+### Parameters
+- **Number of Distinct Genotypes (m)**: Number of genetic variants in each population
+- **Number of Populations (n_pops)**: Size of the ensemble for statistical analysis
+- **Number of Generations (ngens)**: Length of the simulation
+- **Time Increments (ti)**: Subdivisions within each generation for smoother dynamics
+- **Correlation (rho)**: Frequency-independent correlation between X and Y loci
+- **Means (mu_X, mu_Y)**: Initial mean values for the two loci
+- **Standard Deviations (sigma_X, sigma_Y)**: Initial genetic variation at each locus
+
+The `sample_bivariate()` function generates the initial genetic values according to your chosen distribution, creating the starting point for each population in the ensemble.
+
+### Initial Frequency Type
+- **Initial Frequency Type**: Controls how the starting frequencies of genotypes are assigned in each population.
+    - `"equal"`: All genotypes start with the same frequency (uniform distribution)
+    - `"random"`: Genotype frequencies are randomly assigned and normalized to sum to 1
+
+This option allows you to explore how the initial distribution of genetic variation affects the evolutionary dynamics. Try switching between equal and random initial frequencies to see how it influences the results!
+
+```{css, echo=FALSE}
+.panel-tabset .nav-item {
+  font-size: 1.2em;
+  font-style: normal;
+  font-weight: bold;
+}
+```
+
+::: {.panel-tabset}
+
+### Parameters
+
+```{pyodide-python}
+
+import numpy as np
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+from js import window
+
+#| code-fold: true
+#| code-summary: "Parameters"
+#| echo: true
+#| caption: "Distribution type / Initial frequencies / Simulation parameters"
+
+# **********************************************************
+# ***    CHOOSE BIVARIATE DISTRIBUTION                   ***
+# **********************************************************
+distribution_type = "multivariate_normal"  
+# options: "multivariate_normal", "bivariate_t", "bivariate_uniform"
+
+# **********************************************************
+# ***    CHOOSE INITIAL FREQUENCIES SCHEME               ***
+# **********************************************************
+initial_freq_type = "equal"  
+# options: "equal" or "random"
+
+# **********************************************************
+# ***    SIMULATION PARAMETERS                           ***
+# **********************************************************
+n_pops = 100           # Number of populations in the ensemble
+m = 20                 # Number of distinct genotypes (individuals) per population
+ngens = 5000           # Number of generations to simulate
+ti = 2                 # Time increments per generation (for smoother dynamics)
+rho = 0.5              # Initial correlation between X and Y loci
+mu_X, mu_Y = -0.1, -0.1  # Mean values for loci X and Y
+sigma_X, sigma_Y = 0.05, 0.05  # Standard deviations for loci X and Y
+cov_XY = rho * sigma_X * sigma_Y  # Covariance between X and Y
+cov_matrix = np.array([[sigma_X**2, cov_XY], [cov_XY, sigma_Y**2]])  # Covariance matrix for bivariate distributions
+tf = 200               # Final time (in generations) for ensemble plots
+tr = tf*ti             # Final time (in time increments) for ensemble plots
+
+def sample_bivariate(dist, size):
+    if dist == "multivariate_normal":
+        return np.random.multivariate_normal([mu_X, mu_Y], cov_matrix, size=size)
+    elif dist == "bivariate_t":
+        df = 5
+        g = np.random.gamma(df / 2., 2. / df, size=(size,))
+        Z = np.random.multivariate_normal([0, 0], cov_matrix, size=size)
+        return np.array([mu_X, mu_Y]) + Z / np.sqrt(g)[:, None]
+    elif dist == "bivariate_uniform":
+        low  = [mu_X - sigma_X * np.sqrt(3), mu_Y - sigma_Y * np.sqrt(3)]
+        high = [mu_X + sigma_X * np.sqrt(3), mu_Y + sigma_Y * np.sqrt(3)]
+        return np.random.uniform(low, high, size=(size,))
+    else:
+        raise ValueError("Unknown distribution type")
+
+
+np.random.seed(42)  # For reproducibility
+
+print("Done!")
+```
+
+### Initial Conditions
+
+
+
+```{pyodide-python}
+mean_fitness_ensemble = np.zeros((ngens*ti, n_pops))
+cov_ensemble = np.zeros((ngens*ti, n_pops))
+
+#| caption: "Simulation code"
+
+for pop in range(n_pops):
+    XY = sample_bivariate(distribution_type, m)
+    fitnesses = np.exp(XY[:,0] + XY[:,1])
+    if initial_freq_type == "equal":
+        freqs = np.ones(m) / m
+    elif initial_freq_type == "random":
+        freqs = np.random.uniform(0, 1, m)
+        freqs = freqs / np.sum(freqs)
+    else:
+        raise ValueError("Unknown initial frequency type")
+
+    fq = freqs/np.sum(freqs)
+    mean_fitness_ensemble[0, pop] = np.sum(fq * fitnesses)
+    cov_ensemble[0, pop] = np.sum(fq*(XY[:,0] - np.sum(XY[:,0]*fq))*(XY[:,1] - np.sum(XY[:,1]*fq)))
+
+    for gen in range(1, ngens * ti):
+        wbar = np.sum(freqs * fitnesses)
+        freqs = freqs * (fitnesses / wbar)**(1/ti)
+        fq = freqs/np.sum(freqs)
+        mean_fitness_ensemble[gen, pop] = np.sum(fq * fitnesses)
+        cov_ensemble[gen, pop] = np.sum(fq*(XY[:,0] - np.sum(XY[:,0]*fq))*(XY[:,1] - np.sum(XY[:,1]*fq)))
+
+print("Done!")
+```
+
+### Plots
+
+```{pyodide-python}
+
+mean_fit_mean = np.mean(mean_fitness_ensemble, axis=1)
+cov_mean = np.mean(cov_ensemble, axis=1)
+
+#| caption: "Trajectory-ensemble plots"
+
+# Generate figure
+fig = plt.figure(figsize=(10, 4))
+xx = [x / ti for x in range(ngens * ti)]
+
+plt.subplot(1, 2, 1)
+for i in range(n_pops):
+    plt.plot(xx[:tr], mean_fitness_ensemble[:tr, i], color='gray', alpha=0.3)
+plt.plot(xx[:tr], mean_fit_mean[:tr], color='red', lw=2, label='Mean trajectory')
+plt.xlabel('Generation')
+plt.ylabel('Mean fitness')
+plt.title('Mean fitness trajectories')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+for i in range(n_pops):
+    plt.plot(xx[:tr], cov_ensemble[:tr, i], color='gray', alpha=0.3)
+plt.plot(xx[:tr], cov_mean[:tr], color='blue', lw=2, label='Mean trajectory')
+plt.xlabel('Generation')
+plt.ylabel('cov(X,Y)')
+plt.title('Covariance trajectories')
+plt.legend()
+
+plt.tight_layout()
+
+# Save figure to buffer
+buf = BytesIO()
+fig.savefig(buf, format="png", bbox_inches='tight')
+buf.seek(0)
+b64_image = base64.b64encode(buf.read()).decode("utf-8")
+buf.close()
+
+# Estimate pixel size of figure
+dpi = fig.dpi
+width_px = int(fig.get_size_inches()[0] * dpi)
+height_px = int(fig.get_size_inches()[1] * dpi)
+
+# Open popup with image
+html = f"""
+<html>
+<head><title>Trajectory Plot</title></head>
+<body style='margin:0; padding:0;'>
+<img src='data:image/png;base64,{b64_image}' style='display:block; margin:0; padding:0;'>
+</body>
+</html>
+"""
+
+popup = window.open("", "_blank", f"width={width_px},height={height_px}")
+popup.document.write(html)
+popup.document.close()
+
+```
+
+### Key Plot
+
+```{pyodide-python}
+#| caption: "Mean cumulative covariance plot"
+
+fig = plt.figure()
+plt.plot(xx, np.zeros(len(cov_mean)), color='gray', lw=2, label='Zero')
+plt.plot(xx, np.cumsum(cov_mean/ti), color='blue', lw=2, label='Mean trajectory')
+plt.xlabel('Generation')
+plt.ylabel('cov(X,Y)')
+plt.title('Mean cumulative covariance')
+plt.legend()
+
+# Save figure to buffer
+buf = BytesIO()
+fig.savefig(buf, format="png", bbox_inches='tight')
+buf.seek(0)
+b64_image = base64.b64encode(buf.read()).decode("utf-8")
+buf.close()
+
+# Estimate pixel size of figure
+dpi = fig.dpi
+width_px = int(fig.get_size_inches()[0] * dpi)
+height_px = int(fig.get_size_inches()[1] * dpi)
+
+# Open popup with image
+html = f"""
+<html>
+<head><title>Trajectory Plot</title></head>
+<body style='margin:0; padding:0;'>
+<img src='data:image/png;base64,{b64_image}' style='display:block; margin:0; padding:0;'>
+</body>
+</html>
+"""
+
+popup = window.open("", "_blank", f"width={width_px},height={height_px}")
+popup.document.write(html)
+popup.document.close()
+```
+
+
+:::
+
+
+```{pyodide-python}
+#| code-fold: true
+#| code-summary: "Show simulation code"
+#| echo: true
+#| code-fold: false
+
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+from js import window
+
+# Create the plot
+fig, ax = plt.subplots(figsize=(6, 4))  # size in inches
+ax.plot([0, 1, 2], [0, 1, 0])
+ax.set_title("Popup Plot")
+
+# Save to buffer
+buf = BytesIO()
+fig.savefig(buf, format="png", bbox_inches='tight')
+buf.seek(0)
+b64_image = base64.b64encode(buf.read()).decode("utf-8")
+buf.close()
+
+# Estimate pixel dimensions (DPI * size in inches)
+dpi = fig.dpi
+width_px = int(fig.get_size_inches()[0] * dpi)
+height_px = int(fig.get_size_inches()[1] * dpi)
+
+# Inject into popup
+html = f"<html><head><title>Popup Plot</title></head><body style='margin:0'><img src='data:image/png;base64,{b64_image}' style='display:block'></body></html>"
+popup = window.open("", "_blank", f"width={width_px},height={height_px}")
+popup.document.write(html)
+popup.document.close()
+
+```
+
+
+
+## Simulation
+
+
+
+This section runs the core evolutionary simulation. For each population in the ensemble, it tracks how allele frequencies change over time under selection.
+
+### What the Simulation Does
+
+1. **Initialization**: For each population, it generates initial genetic values (X, Y) for all individuals and sets equal initial frequencies
+2. **Fitness Calculation**: Individual fitness is calculated as exp(X + Y), creating a multiplicative fitness landscape
+3. **Selection Dynamics**: Over each generation, allele frequencies change according to their relative fitness
+4. **Covariance Tracking**: The covariance between X and Y is calculated at each time point using the current allele frequencies
+
+### Key Mathematical Operations
+
+- **Fitness**: `fitnesses = np.exp(XY[:,0] + XY[:,1])` - Multiplicative fitness from both loci
+- **Selection**: `freqs = freqs * (fitnesses / wbar)**(1/ti)` - Frequency change proportional to relative fitness
+- **Covariance**: `cov_ensemble[gen, pop] = np.sum(fq*(XY[:,0] - np.sum(XY[:,0]*fq))*(XY[:,1] - np.sum(XY[:,1]*fq)))` - Weighted covariance using current frequencies
+
+The simulation runs for all populations in parallel, creating an ensemble of evolutionary trajectories that we can analyze statistically.
+
+## Key Plot: Mean cumulative covariance
+
+This is the most important plot in the simulation, demonstrating a fundamental theoretical result about the selective advantage of sex.
+
+### What This Plot Shows
+
+The blue line shows the **cumulative mean covariance** over time, which represents the total selective advantage that sexual reproduction provides. The gray line at zero serves as a reference point.
+
+### The Key Result
+
+**The cumulative covariance always ends up below zero** - this is not a coincidence, but a mathematical theorem that holds under very general conditions. This result proves that:
+
+1. **The ensemble mean selective advantage of sex is asymptotically non-negative**
+2. **Sexual reproduction provides a systematic advantage** in breaking up unfavorable genetic associations
+3. **This advantage accumulates over time** and becomes more pronounced as selection continues
+
+### Why This Matters
+
+
+This theoretical result explains why sexual reproduction can be evolutionarily stable despite its costs. The negative cumulative covariance means that sex systematically creates beneficial genetic combinations that selection can act upon, providing a long-term advantage that outweighs short-term costs.
+
+### Interactive Exploration
+
+You are encouraged to:
+- **Modify the parameters** (correlation, means, standard deviations) to see how the result holds across different scenarios
+- **Change the distribution type** to explore different genetic architectures
+- **Adjust the simulation length** to observe the asymptotic behavior
+- **Experiment with the code** to test the robustness of this fundamental result
+
+The universality of this result across different parameter settings demonstrates the deep mathematical foundation underlying the evolution of sexual reproduction.
+
+
+Now let's try this:
+
+::: {.cell-output-display}
+<div id="progress" style="font-weight: bold; font-family: monospace; padding-top: 5px;">
+Progress: starting...
+</div>
+:::
+
+```{pyodide-python}
+#| code-fold: true
+#| code-summary: "Show simulation code"
+
+# Here's a Python translation of the Julia code using NumPy, SciPy, and Matplotlib.
+# It captures the same logic with array and loop transformations.
+
+import numpy as np
+from scipy.stats import multivariate_normal
+from numpy.random import default_rng
+import matplotlib.pyplot as plt
+
+rng = default_rng(seed=1234)
+
+# Simulation parameters
+N = int(2.7e3)
+reps = 1
+gens = 200
+dj = 20
+m = 1
+U = np.exp(-3.0)
+
+# Output containers
+cv = [np.zeros(gens + 1) for _ in range(reps)]
+mf = [np.zeros(gens + 1) for _ in range(reps)]
+mfs = [np.full((gens + 1, gens + 1), np.nan) for _ in range(reps)]
+mft = [np.full((gens + 1, gens + 1), np.nan) for _ in range(reps)]
+
+# Bivariate normal distribution
+mean = [-0.1, -0.1]
+sdx = 0.1
+sdy = 0.1
+crxy = 0.7
+cov = [[sdx**2, sdx * sdy * crxy], [sdx * sdy * crxy, sdy**2]]
+dfe = multivariate_normal(mean=mean, cov=cov)
+
+import asyncio
+from js import document
+
+progress_div = document.getElementById("progress")
+
+# Simulation
+async def run_simulation():
+    p0 = []
+    for i in range(reps):
+        # print(f"Starting rep {i+1}")
+
+        p = rng.multivariate_normal(mean, cov, size=N)
+        p0.append(p.copy())
+
+        for j in range(gens):
+
+            px = p[:, 0].copy()
+            py = p[:, 1].copy()
+
+            px1 = px.copy()
+            py1 = py.copy()
+
+            fx = lambda t: np.sum(px1 * np.exp(px1 * t)) / np.sum(np.exp(px1 * t))
+            fy = lambda t: np.sum(py1 * np.exp(py1 * t)) / np.sum(np.exp(py1 * t))
+
+            for k in range(j, min(j + dj + 1, gens + 1)):
+                dt = k - j
+                mfs[i][j, k] = np.mean(px) + np.mean(py)
+
+                if dt == m:
+                    px2 = px.copy()
+                    py2 = py.copy()
+                    fxy = lambda t: np.sum((px2 + py2) * np.exp((px2 + py2) * t)) / np.sum(np.exp((px2 + py2) * t))
+
+                if dt <= m:
+                    mft[i][j, k] = fx(dt) + fy(dt)
+                else:
+                    mft[i][j, k] = fxy(dt - m)
+
+                if dt <= m:
+                    wx = np.exp(px)
+                    wy = np.exp(py)
+                    wx /= wx.sum()
+                    wy /= wy.sum()
+                    ngx = rng.choice(N, size=N, p=wx)
+                    ngy = rng.choice(N, size=N, p=wy)
+                else:
+                    wxy = np.exp(px + py)
+                    wxy /= wxy.sum()
+                    ngxy = rng.choice(N, size=N, p=wxy)
+                    ngx = ngxy
+                    ngy = ngxy
+
+                px = px[ngx]
+                py = py[ngy]
+
+                # Update the div in-place
+                progress_div.innerText = f"Progress: {j+1}/{gens} generations completed of rep {i+1}/{reps}"
+                await asyncio.sleep(0)
+
+            cv[i][j] = np.cov(p[:, 0], p[:, 1])[0, 1]
+            mf[i][j] = np.mean(p[:, 0] + p[:, 1])
+
+            ww = np.exp(p[:, 0] + p[:, 1])
+            ww /= ww.sum()
+            next_gen = rng.choice(N, size=N, p=ww)
+
+            p = p[next_gen, :]
+
+    print("All done")
+
+# Run the simulation
+await run_simulation()
+
+# Plot
+plt.figure(figsize=(10, 5))
+plt.plot(np.arange(1, gens + 1), cv[0][1:])  # x has length 500
+plt.title("Covariance over Generations")
+plt.xlabel("Generation")
+plt.ylabel("Covariance")
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(10, 5))
+plt.plot(range(1, gens + 1), mf[0][1:])
+plt.title("Mean Fitness over Generations")
+plt.xlabel("Generation")
+plt.ylabel("Mean Fitness")
+plt.grid(True)
+plt.show()
+
+```
+
+hasta aqui
+
+try this
+
+```{pyodide-python}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Set up plot size and font
+fig, axs = plt.subplots(3, 1, figsize=(8, 12))  # 8 inches x 12 inches total (3 plots of 4 inches tall)
+
+# Plot A
+ax = axs[0]
+for i in range(gens):
+    ax.plot(mft[0][i, :], color='red', linewidth=0.5)
+    ax.plot(mfs[0][i, :], color='gray', linewidth=0.5)
+ax.plot(mf[0][:-1], color='black', linewidth=3)
+
+# Add dummy lines to make legend entries
+ax.plot(np.arange(100), [np.nan]*100, color='red', label='Theoretical prediction')
+ax.plot(np.arange(100), [np.nan]*100, color='gray', label='Observation')
+
+ax.set_xlabel(r"$\mathrm{time}$", fontsize=14)
+ax.set_ylabel(r"$\mathrm{rec}^{+} \, \mathrm{fitness}$", fontsize=14)
+ax.legend(loc='lower right')
+ax.text(-0.05, 1.05, 'A', transform=ax.transAxes, fontsize=20, fontweight='bold')
+ax.set_frame_on(True)
+
+# Plot B
+ax = axs[1]
+for i in range(gens):
+    ax.plot(mft[0][i, :][:-1] - mf[0][:-1], color='red', linewidth=0.5)
+    ax.plot(mfs[0][i, :][:-1] - mf[0][:-1], color='gray', linewidth=0.5)
+ax.plot(np.zeros_like(mf[0][:-1]), color='black', linewidth=3)
+
+ax.plot(np.arange(100), [np.nan]*100, color='red', label='Theoretical prediction')
+ax.plot(np.arange(100), [np.nan]*100, color='gray', label='Observation')
+
+ax.set_xlabel(r"$\mathrm{time}$", fontsize=14)
+ax.set_ylabel(r"$\mathrm{rec}^{+} - \mathrm{rec}^{-} ~~ \mathrm{fitness}$", fontsize=14)
+ax.legend(loc='lower right')
+ax.text(-0.05, 1.05, 'B', transform=ax.transAxes, fontsize=20, fontweight='bold')
+ax.set_frame_on(True)
+
+# Plot C
+ax = axs[2]
+for i in range(gens):
+    ax.plot((mft[0][i, :] - mfs[0][i, :])**2, color='gray', linewidth=0.5)
+ax.set_xlabel(r"$\mathrm{time}$", fontsize=14)
+ax.set_ylabel(r"$\mathrm{prediction ~~ error}$", fontsize=14)
+ax.text(-0.05, 1.05, 'C', transform=ax.transAxes, fontsize=20, fontweight='bold')
+ax.set_frame_on(True)
+
+plt.tight_layout()
+plt.show()
+
+```
+
+
+
+
+```{pyodide-python}
+
+#| code-fold: true
+#| code-summary: "Parameters"
+#| echo: true
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Equivalent to padr in Julia
+def padr(arr, target_length):
+    pad_len = max(0, target_length - len(arr))
+    return np.concatenate([arr, np.full(pad_len, np.nan)])
+
+# Extract initial non-NaN length
+x1 = mfs[0][0, :]  # Julia 1-based → Python 0-based
+ln = np.sum(~np.isnan(x1))
+
+# Collect padded vectors
+v1a = []
+v1b = []
+for i in range(gens):
+    x1a = mfs[0][i] - mfs[0][i][i]
+    x1b = mft[0][i] - mft[0][i][i]
+    x2a = x1a[~np.isnan(x1a)]
+    x2b = x1b[~np.isnan(x1b)]
+    x3a = padr(x2a, ln)
+    x3b = padr(x2b, ln)
+    v1a.append(x3a)
+    v1b.append(x3b)
+
+# Stack columns horizontally (each col is a generation)
+v2a = np.column_stack(v1a)
+v2b = np.column_stack(v1b)
+
+# Mean across non-NaN values for each generation
+v5a = []
+v5b = []
+for i in range(gens):
+    v3a = v2a[i]
+    v3b = v2b[i]
+    v4a = v3a[~np.isnan(v3a)]
+    v4b = v3b[~np.isnan(v3b)]
+    v5a.append(np.mean(v4a))
+    v5b.append(np.mean(v4b))
+
+# Plot the result
+plt.figure()
+plt.plot(v5a, lw=8, color='gray', label='observed')
+plt.plot(v5b, color='r', label='predicted')
+plt.xlabel("Generation")
+plt.ylabel("Mean Fitness Difference")
+
+plt.legend()  # This adds the legend
+plt.show()
+```
+
+

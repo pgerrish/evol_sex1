@@ -1,0 +1,80 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Left-Aligned Dashboard\"\n",
+        "format:\n",
+        "  html:\n",
+        "    css: styles.css\n",
+        "filters:\n",
+        "  - pyodide\n",
+        "execute:\n",
+        "  enabled: false\n",
+        "  echo: false\n",
+        "  code-fold: true\n",
+        "  code-summary: \"Show code\"\n",
+        "---\n",
+        "\n",
+        "::: {.panel-tabset}\n",
+        "\n",
+        "### Parameters"
+      ],
+      "id": "443ec7b0"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| echo: true\n",
+        "#| code-fold: false\n",
+        "#| code-summary: \"Simulation Parameters\"\n",
+        "\n",
+        "param_a = 10\n",
+        "param_b = 20"
+      ],
+      "id": "6121b67d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### Output"
+      ],
+      "id": "4c298ced"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| code-fold: true\n",
+        "#| code-summary: \"Example output\"\n",
+        "print(f\"Parameters are a={param_a}, b={param_b}\")"
+      ],
+      "id": "a40a5465",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        ":::"
+      ],
+      "id": "d309b67f"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

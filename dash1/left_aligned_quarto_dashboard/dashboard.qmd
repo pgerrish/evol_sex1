@@ -1,0 +1,39 @@
+---
+title: "Left-Aligned Dashboard"
+format:
+  html:  
+    page-layout: full
+    css: styles.css
+    grid:
+      gutter-width: 0rem # Set to 0 to eliminate the gutter
+filters:
+  - pyodide
+execute:
+  enabled: false
+  echo: false
+  code-fold: true
+  code-summary: "Show code"
+---
+
+::: {.panel-tabset}
+
+### Parameters
+
+```{python}
+#| echo: true
+#| code-fold: false
+#| code-summary: "Simulation Parameters"
+
+param_a = 10
+param_b = 20
+```
+
+### Output
+
+```{python}
+#| code-fold: true
+#| code-summary: "Example output"
+print(f"Parameters are a={param_a}, b={param_b}")
+```
+
+:::

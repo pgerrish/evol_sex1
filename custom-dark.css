@@ -1,0 +1,19 @@
+
+/* Dark theme for code blocks */
+div.sourceCode, pre, code {
+  background-color: #1e1e1e !important;
+  color: #f8f8f2 !important;
+  font-family: 'Fira Code', monospace;
+  font-size: 14px;
+  border-radius: 8px;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+/* Highlight keywords */
+span.k { color: #66d9ef; }  /* keyword */
+span.nb { color: #f92672; } /* built-in */
+span.s, span.s2 { color: #e6db74; }  /* strings */
+span.c { color: #75715e; font-style: italic; } /* comments */
+span.o { color: #f92672; }  /* operator */
+span.n { color: #a6e22e; }  /* names */

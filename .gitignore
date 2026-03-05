@@ -1,0 +1,20 @@
+# Quarto
+.quarto/
+*_files/
+*.html
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+env/
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Conflicted copies
+*conflicted copy*

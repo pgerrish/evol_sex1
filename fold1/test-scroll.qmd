@@ -1,0 +1,136 @@
+---
+title: "Scroll Test"
+format: html
+theme: flatly.scss
+---
+
+## Test Code Block
+
+Here's a simple code block to test scrolling:
+
+```python
+# This is a very long code block
+# Line 1
+# Line 2
+# Line 3
+# Line 4
+# Line 5
+# Line 6
+# Line 7
+# Line 8
+# Line 9
+# Line 10
+# Line 11
+# Line 12
+# Line 13
+# Line 14
+# Line 15
+# Line 16
+# Line 17
+# Line 18
+# Line 19
+# Line 20
+# Line 21
+# Line 22
+# Line 23
+# Line 24
+# Line 25
+# Line 26
+# Line 27
+# Line 28
+# Line 29
+# Line 30
+# Line 31
+# Line 32
+# Line 33
+# Line 34
+# Line 35
+# Line 36
+# Line 37
+# Line 38
+# Line 39
+# Line 40
+# Line 41
+# Line 42
+# Line 43
+# Line 44
+# Line 45
+# Line 46
+# Line 47
+# Line 48
+# Line 49
+# Line 50
+```
+
+::: {.raw-html}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("Script loaded");
+  
+  // Find all code blocks - be more specific
+  const codeBlocks = document.querySelectorAll('div.sourceCode');
+  console.log("Found code blocks:", codeBlocks.length);
+  
+  codeBlocks.forEach(function(block, index) {
+    console.log("Setting up block", index, block);
+    
+    // Add mouse wheel event listener to the div
+    block.addEventListener('wheel', function(e) {
+      console.log("Wheel event on div block", index, "deltaY:", e.deltaY);
+      e.preventDefault();
+      e.stopPropagation();
+      this.scrollTop += e.deltaY;
+      return false;
+    }, { passive: false, capture: true });
+    
+    // Also handle the pre element inside
+    const preElement = block.querySelector('pre.sourceCode');
+    if (preElement) {
+      preElement.addEventListener('wheel', function(e) {
+        console.log("Wheel event on pre element", index, "deltaY:", e.deltaY);
+        e.preventDefault();
+        e.stopPropagation();
+        this.scrollTop += e.deltaY;
+        return false;
+      }, { passive: false, capture: true });
+    }
+    
+    // Also handle the code element inside
+    const codeElement = block.querySelector('code.sourceCode');
+    if (codeElement) {
+      codeElement.addEventListener('wheel', function(e) {
+        console.log("Wheel event on code element", index, "deltaY:", e.deltaY);
+        e.preventDefault();
+        e.stopPropagation();
+        this.scrollTop += e.deltaY;
+        return false;
+      }, { passive: false, capture: true });
+    }
+    
+    // Add event listener to the entire block area
+    block.addEventListener('mouseenter', function() {
+      console.log("Mouse entered block", index);
+    });
+    
+    block.addEventListener('mouseleave', function() {
+      console.log("Mouse left block", index);
+    });
+  });
+  
+  // Also try a global wheel handler
+  document.addEventListener('wheel', function(e) {
+    const target = e.target;
+    if (target.closest('.sourceCode')) {
+      console.log("Global wheel event on sourceCode element");
+      const sourceCode = target.closest('.sourceCode');
+      if (sourceCode) {
+        e.preventDefault();
+        e.stopPropagation();
+        sourceCode.scrollTop += e.deltaY;
+        return false;
+      }
+    }
+  }, { passive: false, capture: true });
+});
+</script>
+::: 

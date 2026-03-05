@@ -1,0 +1,14 @@
+/* scroll-style.css */
+
+/* Make all folded code blocks scrollable if they exceed max height */
+details .cell-code, .cell-output > pre, .cell-code > pre, .code-block pre {
+  max-height: 200px !important;    /* Enforce max height */
+  overflow-y: auto !important;     /* Add vertical scroll */
+  overflow-x: auto !important;     /* Add horizontal scroll */
+  display: block;
+  white-space: pre-wrap;           /* Wrap long lines if needed */
+  background-color: #f9f9f9;
+  padding: 0.5em;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}

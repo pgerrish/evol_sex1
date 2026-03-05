@@ -1,0 +1,4 @@
+- source: interactive-sex-recombination.qmd
+  quarto-pub:
+    - id: e50901b7-f948-4543-a198-cef4ebd19aac
+      url: https://pgerrish.quarto.pub/interactive-ensemble-dynamics-under-selection

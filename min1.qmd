@@ -1,0 +1,12 @@
+---
+title: A Quarto Live Document
+engine: knitr
+format: live-html
+---
+
+{{< include ./_extensions/r-wasm/live/_knitr.qmd >}}
+
+```{pyodide}
+for x in range(1, 6):
+  print(10 + x)
+```

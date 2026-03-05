@@ -1,0 +1,4 @@
+- source: fold2.qmd
+  quarto-pub:
+    - id: ffad7c75-36d8-4650-b940-622f105d069c
+      url: https://pgerrish.quarto.pub/pyodide-with-scrollable-folded-code
